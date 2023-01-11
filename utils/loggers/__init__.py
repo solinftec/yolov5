@@ -148,8 +148,8 @@ class Loggers():
         if self.wandb:
             if ((epoch + 1) % self.opt.save_period == 0 and not final_epoch) and self.opt.save_period != -1:
                 self.wandb.log_model(last.parent, self.opt, epoch, fi, best_model=best_fitness == fi)
-        if self.mlflow and best_fitness == fi:
-            self.mlflow.log_model(model_path=last, model_name=f"{self.mlflow.model_name}/best")
+        if self.mlflow:
+            self.mlflow.log_model(model_path=last, model_name=f"{self.mlflow.model_name}/last")
 
     def on_train_end(self, last, best, plots, epoch):
         # Callback runs on training end
@@ -180,4 +180,6 @@ class Loggers():
             self.mlflow.log_artifacts(self.save_dir / "results.csv", "results")
             if last.exists():
                 self.mlflow.log_model(model_path=last, model_name=f"{self.mlflow.model_name}/last")
+            if best.exists():
+                self.mlflow.log_model(model_path=best, model_name=f"{self.mlflow.model_name}/best")
             self.mlflow.finish_run()
