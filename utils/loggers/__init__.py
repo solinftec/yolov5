@@ -180,3 +180,4 @@ class Loggers():
             self.mlflow.log_artifacts(self.save_dir / "results.csv", "results")
             if last.exists():
                 self.mlflow.log_model(model_path=last, model_name=f"{self.mlflow.model_name}/last")
+            self.mlflow.finish_run()
