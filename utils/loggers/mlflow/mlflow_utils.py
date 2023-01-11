@@ -1,6 +1,7 @@
 """Utilities and tools for tracking runs with Mlflow."""
 
 import sys
+import os
 import logging
 from argparse import Namespace
 from pathlib import Path
@@ -15,7 +16,6 @@ from utils.general import colorstr
 
 LOGGER = logging.getLogger(__name__)
 
-
 try:
     import mlflow
     assert hasattr(mlflow, "__version__")
@@ -29,11 +29,14 @@ class MlflowLogger:
     def __init__(self, opt: Namespace) -> None:
         prefix = colorstr("Mlflow: ")
         try:
-            mlflow.set_experiment("YoloV5 - Pragas")
+            if os.getenv("MLFLOW_EXPERIMENT_NAME"):
+                mlflow.set_experiment(os.getenv("MLFLOW_EXPERIMENT_NAME"))
             self.mlflow, self.mlflow_active_run = mlflow, None if not mlflow else mlflow.start_run(run_name=opt.name)
             if self.mlflow_active_run is not None:
                 self.run_id = self.mlflow_active_run.info.run_id
                 LOGGER.info(f"{prefix}Using run_id({self.run_id})")
+                LOGGER.info(f"{prefix}Experiment ({os.getenv('MLFLOW_EXPERIMENT_NAME')})")
+                LOGGER.info(f"{prefix}Server {os.getenv('MLFLOW_TRACKING_URI')}")
                 self.setup(opt)
         except Exception as err:
             LOGGER.error(f"{prefix}Failing init - {repr(err)}")
@@ -75,7 +78,6 @@ class MlflowLogger:
                                      artifacts={"model_path": str(model_path.resolve())},
                                      python_model=self.mlflow.pyfunc.PythonModel())
 
-
     def log_params(self, params: Dict[str, Any]) -> None:
         try:
             flattened_params = MlflowLogger._format_params(params_dict=params)
@@ -90,7 +92,7 @@ class MlflowLogger:
     def log_metrics(self, metrics: Dict[str, float], epoch: int = None, is_param: bool = False) -> None:
         prefix = "param/" if is_param else ""
         metrics_dict = {
-            f"{prefix}{k.replace(':','-')}": float(v)
+            f"{prefix}{k.replace(':', '-')}": float(v)
             for k, v in metrics.items() if (isinstance(v, float) or isinstance(v, int))}
         self.mlflow.log_metrics(metrics=metrics_dict, step=epoch)
 
