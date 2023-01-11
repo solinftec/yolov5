@@ -50,3 +50,14 @@ class MlflowLogger:
         self.weights = Path(opt.weights)
         self.client = mlflow.tracking.MlflowClient()
         self.log_params(vars(opt))
+
+    @staticmethod
+    def _format_params(params_dict, parent_key="", sep="/"):
+        items = []
+        for key, value in params_dict.items():
+            new_key = parent_key + sep + key if parent_key else key
+            if isinstance(value, MutableMapping):
+                items.extend(MlflowLogger._format_params(value, new_key, sep).items())
+            else:
+                items.append((new_key, value))
+        return dict(items)
