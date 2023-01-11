@@ -15,7 +15,7 @@ from utils.loggers.mlflow.mlflow_utils import MlflowLogger
 from utils.plots import plot_images, plot_results
 from utils.torch_utils import de_parallel
 
-LOGGERS = ('csv', 'tb', 'wandb')  # text-file, TensorBoard, Weights & Biases
+LOGGERS = ('csv', 'tb', 'wandb', 'mlflow')  # text-file, TensorBoard, Weights & Biases
 
 try:
     import wandb
