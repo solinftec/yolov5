@@ -1,4 +1,4 @@
-# YOLOv5 🚀 by Ultralytics, GPL-3.0 license
+# YOLOv5 🚀 by Ultralytics, GPL-3.0 license modified from solinftec by Willian
 
 # Start FROM Nvidia PyTorch image https://ngc.nvidia.com/catalog/containers/nvidia:pytorch
 FROM nvcr.io/nvidia/pytorch:21.05-py3
@@ -26,7 +26,8 @@ ADD https://ultralytics.com/assets/Arial.ttf /root/.config/Ultralytics/
 
 # Set environment variables
 # ENV HOME=/usr/src/app
-
+ENV MLFLOW_TRACKING_URI="https://api-usa.saas-solinftec.com/mlflow/"
+ENV MLFLOW_EXPERIMENT_NAME="YoloV5 - Pragas"
 
 # Usage Examples -------------------------------------------------------------------------------------------------------
 
