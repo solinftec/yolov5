@@ -61,3 +61,16 @@ class MlflowLogger:
             else:
                 items.append((new_key, value))
         return dict(items)
+
+    def log_artifacts(self, artifact: Path, relpath: str = None) -> None:
+        if not isinstance(artifact, Path):
+            artifact = Path(artifact)
+        if artifact.is_dir():
+            self.mlflow.log_artifacts(f"{artifact.resolve()}/", artifact_path=str(artifact.stem))
+        else:
+            self.mlflow.log_artifact(str(artifact.resolve()), artifact_path=relpath)
+
+    def log_model(self, model_path: Path, model_name: str = None) -> None:
+        self.mlflow.pyfunc.log_model(artifact_path=self.model_name if model_name is None else model_name,
+                                     artifacts={"model_path": str(model_path.resolve())},
+                                     python_model=self.mlflow.pyfunc.PythonModel())
