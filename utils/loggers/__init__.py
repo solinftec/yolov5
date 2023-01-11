@@ -46,7 +46,8 @@ class Loggers():
                      'val/box_loss', 'val/obj_loss', 'val/cls_loss',  # val loss
                      'x/lr0', 'x/lr1', 'x/lr2']  # params
 
-        self.best_keys = ['best/epoch', 'best/precision', 'best/recall', 'best/mAP_0.5', 'best/mAP_0.5:0.95'] # best params
+        self.best_keys = ['best/epoch', 'best/precision', 'best/recall', 'best/mAP_0.5',
+                          'best/mAP_0.5:0.95']  # best params
         for k in LOGGERS:
             setattr(self, k, None)  # init empty logger dictionary
         self.csv = True  # always log to csv
@@ -98,6 +99,9 @@ class Loggers():
             if self.wandb and ni == 10:
                 files = sorted(self.save_dir.glob('train*.jpg'))
                 self.wandb.log({'Mosaics': [wandb.Image(str(f), caption=f.name) for f in files if f.exists()]})
+            if self.mlflow:
+                files = sorted(self.save_dir.glob('train*.jpg'))
+                [self.mlflow.log_artifacts(f, "train") for f in files if f.exists()]
 
     def on_train_epoch_end(self, epoch):
         # Callback runs on train epoch end
@@ -133,11 +137,19 @@ class Loggers():
             self.wandb.log(x)
             self.wandb.end_epoch(best_result=best_fitness == fi)
 
+        if self.mlflow:
+            self.mlflow.log_metrics(metrics=x, epoch=epoch)
+            if best_fitness == fi:
+                best_results = dict(zip(self.best_keys[1:], vals[3:7]))
+                self.mlflow.log_metrics(best_results, epoch=epoch)
+
     def on_model_save(self, last, epoch, final_epoch, best_fitness, fi):
         # Callback runs on model save event
         if self.wandb:
             if ((epoch + 1) % self.opt.save_period == 0 and not final_epoch) and self.opt.save_period != -1:
                 self.wandb.log_model(last.parent, self.opt, epoch, fi, best_model=best_fitness == fi)
+        if self.mlflow and best_fitness == fi:
+            self.mlflow.log_model(model_path=last, model_name=f"{self.mlflow.model_name}/best")
 
     def on_train_end(self, last, best, plots, epoch):
         # Callback runs on training end
@@ -162,3 +174,9 @@ class Loggers():
             else:
                 self.wandb.finish_run()
                 self.wandb = WandbLogger(self.opt)
+
+        if self.mlflow:
+            [self.mlflow.log_artifacts(f, "results") for f in files if f.exists()]
+            self.mlflow.log_artifacts(self.save_dir / "results.csv", "results")
+            if last.exists():
+                self.mlflow.log_model(model_path=last, model_name=f"{self.mlflow.model_name}/last")
