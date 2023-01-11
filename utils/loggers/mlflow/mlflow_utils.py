@@ -74,3 +74,25 @@ class MlflowLogger:
         self.mlflow.pyfunc.log_model(artifact_path=self.model_name if model_name is None else model_name,
                                      artifacts={"model_path": str(model_path.resolve())},
                                      python_model=self.mlflow.pyfunc.PythonModel())
+
+
+    def log_params(self, params: Dict[str, Any]) -> None:
+        try:
+            flattened_params = MlflowLogger._format_params(params_dict=params)
+            run = self.client.get_run(run_id=self.run_id)
+            logged_params = run.data.params
+            [
+                self.mlflow.log_param(key=k, value=v) for k, v in flattened_params.items()
+                if k not in logged_params and v is not None and str(v).strip() != ""]
+        except Exception as err:
+            LOGGER.warning(f"Mlflow: failed to log all params because - {err}")
+
+    def log_metrics(self, metrics: Dict[str, float], epoch: int = None, is_param: bool = False) -> None:
+        prefix = "param/" if is_param else ""
+        metrics_dict = {
+            f"{prefix}{k.replace(':','-')}": float(v)
+            for k, v in metrics.items() if (isinstance(v, float) or isinstance(v, int))}
+        self.mlflow.log_metrics(metrics=metrics_dict, step=epoch)
+
+    def finish_run(self) -> None:
+        self.mlflow.end_run()
