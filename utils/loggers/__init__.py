@@ -11,6 +11,7 @@ from torch.utils.tensorboard import SummaryWriter
 
 from utils.general import colorstr, emojis
 from utils.loggers.wandb.wandb_utils import WandbLogger
+from utils.loggers.mlflow.mlflow_utils import MlflowLogger
 from utils.plots import plot_images, plot_results
 from utils.torch_utils import de_parallel
 
@@ -25,11 +26,10 @@ except (ImportError, AssertionError):
 
 try:
     import mlflow
+
     assert hasattr(mlflow, '__version__')  # verify package import not local dir
 except (ImportError, AssertionError):
     mlflow = None
-
-
 
 
 class Loggers():
@@ -45,6 +45,8 @@ class Loggers():
                      'metrics/precision', 'metrics/recall', 'metrics/mAP_0.5', 'metrics/mAP_0.5:0.95',  # metrics
                      'val/box_loss', 'val/obj_loss', 'val/cls_loss',  # val loss
                      'x/lr0', 'x/lr1', 'x/lr2']  # params
+
+        self.best_keys = ['best/epoch', 'best/precision', 'best/recall', 'best/mAP_0.5', 'best/mAP_0.5:0.95'] # best params
         for k in LOGGERS:
             setattr(self, k, None)  # init empty logger dictionary
         self.csv = True  # always log to csv
@@ -70,6 +72,11 @@ class Loggers():
             self.wandb = WandbLogger(self.opt, run_id)
         else:
             self.wandb = None
+
+        if mlflow and 'mlflow' in self.include:
+            self.mlflow = MlflowLogger(self.opt)
+        else:
+            self.mlflow = None
 
     def on_pretrain_routine_end(self):
         # Callback runs on pre-train routine end
