@@ -40,3 +40,13 @@ class MlflowLogger:
             LOGGER.warning(f"{prefix}Continuining without Mlflow")
             self.mlflow = None
             self.mlflow_active_run = None
+
+    def setup(self, opt: Namespace) -> None:
+        if opt.weights is not None and str(opt.weights).strip() != "":
+            model_name = Path(opt.weights).stem
+        else:
+            model_name = "yolov5"
+        self.model_name = model_name
+        self.weights = Path(opt.weights)
+        self.client = mlflow.tracking.MlflowClient()
+        self.log_params(vars(opt))
